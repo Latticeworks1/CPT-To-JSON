@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>CPT Data Jsonifier</title>
+	<style>
+		body {
+			margin: 0;
+			padding: 0;
+			font-family: Arial, sans-serif;
+			background-color: #f7f7f7;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			height: 100vh;
+		}
+		h1 {
+			font-size: 2.5rem;
+			margin: 2rem 0 1rem 0;
+			text-align: center;
+		}
+		form {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			margin: 2rem 0;
+		}
+		label {
+			font-size: 1.2rem;
+			margin-bottom: 0.5rem;
+			color: #333;
+		}
+		input[type="file"] {
+			padding: 0.5rem;
+			border: none;
+			border-radius: 5px;
+			background-color: #fff;
+			box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+			font-size: 1rem;
+			color: #333;
+			cursor: pointer;
+			transition: box-shadow 0.2s ease-in-out;
+			width: 100%;
+			max-width: 400px;
+		}
+		input[type="file"]:hover,
+		input[type="file"]:focus {
+			box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+		}
+		button[type="submit"],
+		button[type="button"] {
+			padding: 0.5rem 1rem;
+			border: none;
+			border-radius: 5px;
+			background-color: #0066cc;
+			color: #fff;
+			font-size: 1.2rem;
+			cursor: pointer;
+			transition: background-color 0.2s ease-in-out;
+		}
+		button[type="submit"]:hover,
+		button[type="submit"]:focus,
+		button[type="button"]:hover,
+		button[type="button"]:focus {
+			background-color: #004c99;
+		}
+		button[type="submit"]:disabled,
+		button[type="button"]:disabled {
+			opacity: 0.5;
+			cursor: not-allowed;
+		}
+		#output {
+			margin: 2rem 0;
+			padding: 1rem;
+			border: 1px solid #ccc;
+			border-radius: 5px;
+			background-color: #fff;
+			max-width: 800px;
+			word-break: break-all;
+			white-space: pre-wrap;
+			overflow: auto;
+			height: 300px;
+		}
+		#save-button {
+			padding: 0.5rem 1rem;
+			border: none;
+			border-radius: 5px;
+			background-color: #008000;
+			color: #fff;
+			font-size: 1.2rem;
+			cursor: pointer;
+			transition: background-color 0.2s ease-in-out;
+			margin-top: 1rem;
+		}
+		#save-button:hover,
+		#save-button:focus {
+			background-color: #006400;
+		}
+	</style>
+</head>
+<body>
+	<h1>CPT Data Jsonifier</h1>
+	<form id="upload-form">
+		<label for="file-input">Choose a .cpt file to upload:</label>
+		<input type="file" id="file-input" accept=".cpt">
+		<button type="submit">Upload</button>
+	</form>
+	<div id="output"></div>
+	<button id="save-button" disabled>Save output</button>
+	<script>
+		const form = document.getElementById('upload-form');
+		const fileInput = document.getElementById('file-input');
+		const outputDiv = document.getElementById('output');
+		const saveButton = document.getElementById('save-button');
+
+		form.addEventListener('submit', (event) => {
+			event.preventDefault();
+			const file = fileInput.files[0];
+			if (!file) {
+				alert('Please choose a file to upload.');
+				return;
+			}
+			const reader = new FileReader();
+			reader.onload = () => {
+				const data = parseCptData(reader.result);
+				outputDiv.innerText = JSON.stringify(data, null, 2);
+				saveButton.disabled = false;
+				saveButton.addEventListener('click', () => {
+					const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+					const url = URL.createObjectURL(blob);
+					const link = document.createElement('a');
+					link.href = url;
+					link.download = 'output.json';
+					document.body.appendChild(link);
+					link.click();
+					document.body.removeChild(link);
+					URL.revokeObjectURL(url);
+				});
+			};
+			reader.readAsText(file);
+		});
+
+		function parseCptData(text) {
+			const lines = text.trim().split('\n');
+			const data = [];
+			for (const line of lines) {
+				if (line.startsWith('D=')) {
+					const depth = parseFloat(line.substring(2));
+					const qcMatch = line.match(/QC=([^,]+)/);
+					const fsMatch = line.match(/FS=([^,]+)/);
+					const uMatch = line.match(/U=([^,]+)/);
+					if (qcMatch && fsMatch && uMatch) {
+						const qc = parseFloat(qcMatch[1]);
+						const fs = parseFloat(fsMatch[1]);
+						const u = parseFloat(uMatch[1]);
+						data.push({ depth, qc, fs, u });
+					}
+				}
+			}
+			return data;
+		}
+	
+	</script>
+</body>
+</html>
